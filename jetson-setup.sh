@@ -21,10 +21,10 @@ export DEBIAN_FRONTEND=noninteractive
 
 INSTALL_IOTEDGE=0
 while true; do
-    read -p "Do you wish to to Install IoTEdge (Y/N)? " yn
+    read -p "Do you wish to to install IoTEdge (Y/N)? " yn
     case $yn in
         [Yy]* ) INSTALL_IOTEDGE=1; break;;
-        [Nn]* ) echo "[$yn] Skip installing IoTEdge."; break;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
 done
@@ -34,7 +34,7 @@ while true; do
     read -p "Do you wish to to configure IoTEdge Connection String (Y/N)? " yn
     case $yn in
         [Yy]* ) CONFIGURE_IOTEDGE=1; break;;
-        [Nn]* ) echo "[$yn] Skip Configuring IoTEdge."; break;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
 done
@@ -42,7 +42,7 @@ done
 if [ $CONFIGURE_IOTEDGE = 1 ]; then
     read -rep $'Enter IoTEdge Connection String (Azure Portal -> IoTHub -> IoT Edge -> Your device -> Primary Connection String.): \n' conn_str
     if [ -z $conn_str ]; then
-        echo "No connection string provided, skipping IoTEdge Configuration."; CONFIGURE_IOTEDGE=0;
+        echo "No connection string provided, skipping IoTEdge configuration."; CONFIGURE_IOTEDGE=0;
     fi
 fi
 
@@ -51,7 +51,7 @@ while true; do
     read -p "Do you wish to to install Tensorflow (Y/N)? " yn
     case $yn in
         [Yy]* ) INSTALL_TENSORFLOW=1; break;;
-        [Nn]* ) echo "[$yn] Skip installing Tensorflow."; break;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
 done
@@ -61,7 +61,7 @@ while true; do
     read -p "Do you wish to to install ONNX Runtime (Y/N)? " yn
     case $yn in
         [Yy]* ) INSTALL_ONNX_RUNTIME=1; break;;
-        [Nn]* ) echo "[$yn] Skip installing ONNX Runtime."; break;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
 done
@@ -129,12 +129,11 @@ apt-get -y update -qq > /dev/null
 echo " Install utilities: curl, pip, dialog"
 apt-get -y install curl python3-pip dialog -qq > /dev/null
 
-echo " Set NVIDIA as the default container-runtime"
-cp -f docker_daemon.json /etc/docker/daemon.json
-
 if [ $INSTALL_IOTEDGE != 0 ]; then
     echo " Install IoTEdge"
     apt-get -y install aziot-edge -qq > /dev/null
+    echo " Set NVIDIA as the default container-runtime"
+    cp -f docker_daemon.json /etc/docker/daemon.json
 fi
 
 if [ $CONFIGURE_IOTEDGE != 0 ]; then
