@@ -7,7 +7,9 @@ echo " Jetson Additional ML Frameworks Installation Script."
 echo " This will install following additional packages on top of JetPack"
 echo " ---> Tensorflow"
 echo " ---> ONNX Runtime"
+echo " ---> PyTorch"
 echo " ---> Azure IoTEdge"
+echo " ---> Scikit-Learn (not working)"
 
 source l4t-jetpack-version.sh > /dev/null
 echo " Your device: L4T_VERSION: R$L4T_VERSION, JetPack: $JP_VERSION"
@@ -48,7 +50,7 @@ fi
 
 INSTALL_TENSORFLOW=0
 while true; do
-    read -p "Do you wish to to install Tensorflow (Y/N)? " yn
+    read -p "Do you wish to to install Tensorflow (Y/N)? (Takes 30 mins): " yn
     case $yn in
         [Yy]* ) INSTALL_TENSORFLOW=1; break;;
         [Nn]* ) break;;
@@ -61,6 +63,26 @@ while true; do
     read -p "Do you wish to to install ONNX Runtime (Y/N)? " yn
     case $yn in
         [Yy]* ) INSTALL_ONNX_RUNTIME=1; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+INSTALL_PYTORCH=0
+while true; do
+    read -p "Do you wish to to install PyTorch (Y/N)? " yn
+    case $yn in
+        [Yy]* ) INSTALL_PYTORCH=1; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+INSTALL_SCIKIT_LEARN=0
+while true; do
+    read -p "Do you wish to to install Scikit-Learn (Y/N)? (Takes 30 mins) (Not fully working): " yn
+    case $yn in
+        [Yy]* ) INSTALL_SCIKIT_LEARN=1; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
@@ -88,13 +110,14 @@ fi
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 echo " Installation Summary"
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
-echo " JetPack Version           : L4T $L4T_VERSION"
-echo " Install IoTEdge?          : $INSTALL_IOTEDGE"
-echo " Configure IoTEdge?        : $CONFIGURE_IOTEDGE"
-echo " IoTEdge Connection String : $conn_str"
-echo " Install Tensorflow        : $INSTALL_TENSORFLOW"
-echo " Install ONNXRuntime       : $INSTALL_ONNX_RUNTIME"
-echo
+echo " JetPack Version                      : L4T $L4T_VERSION"
+echo " Install IoTEdge?                     : $INSTALL_IOTEDGE"
+echo " Configure IoTEdge?                   : $CONFIGURE_IOTEDGE"
+echo " IoTEdge Connection String            : $conn_str"
+echo " Install Tensorflow (takes 30 mins)   : $INSTALL_TENSORFLOW"
+echo " Install ONNXRuntime                  : $INSTALL_ONNX_RUNTIME"
+echo " Install PyTorch                      : $INSTALL_PYTORCH"
+echo " Install scikit-learn (takes 30 mins) : $INSTALL_SCIKIT_LEARN"
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 
 while true; do
@@ -106,7 +129,7 @@ while true; do
     esac
 done
 
-if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ]; then
+if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ] && [ $INSTALL_PYTORCH = 0 ] && [ $INSTALL_SCIKIT_LEARN = 0 ]; then
     echo "No packages selected. Skipping install."
     exit
 else
@@ -171,6 +194,51 @@ if [ $INSTALL_ONNX_RUNTIME != 0 ]; then
     wget -nc -q https://nvidia.box.com/shared/static/jy7nqva7l88mq9i8bw3g3sklzf4kccn2.whl -O onnxruntime_gpu-1.10.0-cp36-cp36m-linux_aarch64.whl
     pip3 install -U onnxruntime_gpu-1.10.0-cp36-cp36m-linux_aarch64.whl -q > /dev/null
 fi
+
+if [ $INSTALL_PYTORCH != 0 ]; then
+    echo " Install PyTorch (Details: https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048)"
+    wget -nc -q https://nvidia.box.com/shared/static/p57jwntv436lfrd78inwl7iml6p13fzh.whl -O torch-1.8.0-cp36-cp36m-linux_aarch64.whl
+    apt-get -y install libopenblas-base libopenmpi-dev -qq > /dev/null
+    pip3 install -U Cython -q > /dev/null
+    pip3 install -U numpy torch-1.8.0-cp36-cp36m-linux_aarch64.whl -q > /dev/null
+    echo " Install TorchVision (Details: https://qengineering.eu/install-pytorch-on-jetson-nano.html"
+    pip3 install -U gdown -q > /dev/null
+    gdown -q https://drive.google.com/uc?id=1BdvXkwUGGTTamM17Io4kkjIT6zgvf4BJ
+    pip3 install -U torchvision-0.9.0a0+01dfa8e-cp36-cp36m-linux_aarch64.whl -q > /dev/null
+    rm torchvision-0.9.0a0+01dfa8e-cp36-cp36m-linux_aarch64.whl
+fi
+
+function changedir() {
+    cd $1
+}
+
+if [ $INSTALL_SCIKIT_LEARN != 0 ]; then
+    echo " Install scikit-learn (Takes 30 mins) (Details: https://forums.developer.nvidia.com/t/how-to-install-numpy-scikit-image-scikit-learn-on-jetson-tx2/83819/7)"
+    apt-get -y install liblapack-dev gfortran -qq > /dev/null
+    wget -nc -q https://github.com/scipy/scipy/releases/download/v1.3.3/scipy-1.3.3.tar.gz
+    tar -xzvf scipy-1.3.3.tar.gz scipy-1.3.3
+    changedir scipy-1.3.3/
+    python3 setup.py install --user
+    changedir ..
+
+    wget https://download.osgeo.org/libtiff/tiff-4.1.0.tar.gz
+    tar -xzvf tiff-4.1.0.tar.gz
+    changedir tiff-4.1.0/
+    source configure
+    make
+    make install
+    changedir ..
+
+    apt-get -y install python3-sklearn -qq
+    apt-get -y install libaec-dev libblosc-dev libffi-dev libbrotli-dev libboost-all-dev libbz2-dev -qq
+    apt-get -y install libgif-dev libopenjp2-7-dev liblcms2-dev libjpeg-dev libjxr-dev liblz4-dev liblzma-dev libpng-dev libsnappy-dev libwebp-dev libzopfli-dev libzstd-dev -qq
+    pip3 -U install imagecodecs
+    pip3 -U install scikit-image
+fi
+
+
+
+
 
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 echo " Done"
