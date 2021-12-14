@@ -11,6 +11,7 @@ echo " ---> PyTorch"
 echo " ---> Azure IoTEdge"
 echo " ---> Scikit-Learn (not working)"
 echo " ---> Jetson Inference library"
+echo " ---> Bugfix for nvidia-runtime-container"
 
 source l4t-jetpack-version.sh > /dev/null
 echo " Your device: L4T_VERSION: R$L4T_VERSION, JetPack: $JP_VERSION"
@@ -99,6 +100,16 @@ while true; do
     esac
 done
 
+INSTALL_NVIDIA_DOCKER=0
+while true; do
+    read -p "nvidia-container-runtime has some issues with latest version. Do you wish to install fix for this? (Y/N)? " yn
+    case $yn in
+        [Yy]* ) INSTALL_NVIDIA_DOCKER=1; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
 
 if [ $INSTALL_TENSORFLOW != 0 ]; then
     if [ $JP_VERSION = "4.6" ]; then
@@ -131,6 +142,7 @@ echo " Install ONNXRuntime                  : $INSTALL_ONNX_RUNTIME"
 echo " Install PyTorch                      : $INSTALL_PYTORCH"
 echo " Install scikit-learn (takes 30 mins) : $INSTALL_SCIKIT_LEARN"
 echo " Install jetson-inference             : $INSTALL_JETSON_INFERENCE"
+echo " Fix nvidia-docker container runtime  : $INSTALL_NVIDIA_DOCKER"
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 
 while true; do
@@ -142,7 +154,7 @@ while true; do
     esac
 done
 
-if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ] && [ $INSTALL_PYTORCH = 0 ] && [ $INSTALL_SCIKIT_LEARN = 0 ] && [ $INSTALL_JETSON_INFERENCE = 0 ]; then
+if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ] && [ $INSTALL_PYTORCH = 0 ] && [ $INSTALL_SCIKIT_LEARN = 0 ] && [ $INSTALL_JETSON_INFERENCE = 0 ] && [ $INSTALL_NVIDIA_DOCKER = 0 ]; then
     echo "No packages selected. Skipping install."
     exit
 else
@@ -177,8 +189,8 @@ fi
 
 if [ $CONFIGURE_IOTEDGE != 0 ]; then
     echo " Configuring IoTEdge"
-    sudo iotedge config mp --connection-string $conn_str
-    sudo iotedge config apply -c '/etc/aziot/config.toml'
+    iotedge config mp --connection-string $conn_str
+    iotedge config apply -c '/etc/aziot/config.toml'
 fi
 
 if [ $INSTALL_TENSORFLOW != 0 ]; then
@@ -209,7 +221,7 @@ fi
 # nvcc --version
 
 # echo " Installing protobuf, pycuda, keras2onnx, tf2onnx, scikit-image"
-# apt-get -y install libprotobuf-dev protobuf-compiler --qq
+# apt-get -y install libprotobuf-dev protobuf-compiler -qq
 # pip3 install keras2onnx tf2onnx==1.8.2 pillow pycuda scikit-image -q
 
 if [ $INSTALL_ONNX_RUNTIME != 0 ]; then
@@ -283,6 +295,20 @@ if [ $INSTALL_JETSON_INFERENCE != 0 ]; then
         ldconfig
     fi
 fi
+
+if [ $INSTALL_NVIDIA_DOCKER != 0 ]; then
+
+    echo " Installing Fixes for nvidia-container-runtime."
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)    && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -    && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list |  tee /etc/apt/sources.list.d/nvidia-docker.list
+    curl -s -L https://nvidia.github.io/nvidia-container-runtime/experimental/$distribution/nvidia-container-runtime.list | tee /etc/apt/sources.list.d/nvidia-container-runtime.list
+    apt-get -y update -qq
+    echo " ... Installing nvidia-container-runtime 1.6.rc.2.1 (from Nov 15, 2021) which has the fix"
+    apt-get install -y nvidia-docker2 -qq
+    apt-get install -y nvidia-container-toolkit=1.6.0~rc.2-1 -qq
+    echo " ... Restarting docker service"
+    systemctl restart docker
+fi
+
 
 
 
