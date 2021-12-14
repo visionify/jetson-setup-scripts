@@ -165,6 +165,9 @@ apt-get -y update -qq > /dev/null
 echo " Install utilities: curl, pip, dialog"
 apt-get -y install curl python3-pip dialog -qq > /dev/null
 
+echo " Fix numpy coredump error"
+grep -q OPENBLAS_CORETYPE ~/.bashrc || printf "\nexport OPENBLAS_CORETYPE=ARMV8\n" >> ~/.bashrc
+
 if [ $INSTALL_IOTEDGE != 0 ]; then
     echo " Install IoTEdge"
     apt-get -y install aziot-edge -qq > /dev/null
@@ -263,16 +266,21 @@ if [ $INSTALL_JETSON_INFERENCE != 0 ]; then
         echo "jetson-inference/ directory already exists. Skipping install."
 
     else
-        git clone --recursive https://github.com/dusty-nv/jetson-inference
+        echo " Installing Jetson Inference module"
+
+        echo " ... Installing dependency: python3-numpy"
+        apt-get -y install python3-numpy python-numpy -qq > /dev/null
+        echo " ... Cloning jetson-inference"
+        git clone --recursive https://github.com/dusty-nv/jetson-inference > /dev/null
+        echo " ... Building jetson-inference"
         cd jetson-inference
         mkdir build
         cd build
-        cmake ../
-
-        make -j4
-        make install
+        cmake ../   > /dev/null
+        make -j4    > /dev/null
+        echo " ... Installing jetson-inference"
+        make install > /dev/null
         ldconfig
-
     fi
 fi
 
