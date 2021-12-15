@@ -189,7 +189,7 @@ fi
 
 if [ $CONFIGURE_IOTEDGE != 0 ]; then
     echo " Configuring IoTEdge"
-    iotedge config mp --connection-string $conn_str
+    iotedge config mp --connection-string $conn_str --force
     iotedge config apply -c '/etc/aziot/config.toml'
 fi
 
