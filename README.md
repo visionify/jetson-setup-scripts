@@ -6,6 +6,9 @@ Installing different ML packages on top of Jetson Device. This should work for J
 * Set Docker container runtime to NVIDIA.
 * Install Tensorflow based on the Jetpack version
 * Install ONNX Runtime for ONNX file inferencing.
+* Install PyTorch framework.
+* Install [jetson-inference](https://github.com/dusty-nv/jetson-inference) library.
+
 
 ## How to use?
 * Follow instructions [here](https://developer.nvidia.com/jetpack-sdk-44-archive) to get SD card image & write to your SD card.

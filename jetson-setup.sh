@@ -164,6 +164,9 @@ fi
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 echo " Install selected frameworks."
 
+echo "Install curl"
+apt-get -y install curl -qq
+
 if [ $INSTALL_IOTEDGE != 0 ]; then
     curl -s https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
     cp ./microsoft-prod.list /etc/apt/sources.list.d/
@@ -226,6 +229,7 @@ fi
 
 if [ $INSTALL_ONNX_RUNTIME != 0 ]; then
     echo " Install OnnxRuntime (Details: https://elinux.org/Jetson_Zoo#ONNX_Runtime)"
+    pip3 install -U onnx -q > /dev/null
     wget -nc -q https://nvidia.box.com/shared/static/jy7nqva7l88mq9i8bw3g3sklzf4kccn2.whl -O onnxruntime_gpu-1.10.0-cp36-cp36m-linux_aarch64.whl
     pip3 install -U onnxruntime_gpu-1.10.0-cp36-cp36m-linux_aarch64.whl -q > /dev/null
 fi
