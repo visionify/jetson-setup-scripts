@@ -12,6 +12,7 @@ echo " ---> Azure IoTEdge"
 echo " ---> Scikit-Learn (not working)"
 echo " ---> Jetson Inference library"
 echo " ---> Bugfix for nvidia-runtime-container"
+echo " ---> Install TensorRT OSS (Open Source Software Components)"
 
 source l4t-jetpack-version.sh > /dev/null
 echo " Your device: L4T_VERSION: R$L4T_VERSION, JetPack: $JP_VERSION"
@@ -130,6 +131,16 @@ if [ $INSTALL_TENSORFLOW != 0 ]; then
     fi
 fi
 
+INSTALL_TENSORRT_OSS=0
+while true; do
+    read -p "Install TensorRT OSS (Y/N)? " yn
+    case $yn in
+        [Yy]* ) INSTALL_TENSORRT_OSS=1; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 echo " Installation Summary"
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
@@ -143,6 +154,7 @@ echo " Install PyTorch                      : $INSTALL_PYTORCH"
 echo " Install scikit-learn (takes 30 mins) : $INSTALL_SCIKIT_LEARN"
 echo " Install jetson-inference             : $INSTALL_JETSON_INFERENCE"
 echo " Fix nvidia-docker container runtime  : $INSTALL_NVIDIA_DOCKER"
+echo " Install TensorRT OSS                 : $INSTALL_TENSORRT_OSS"
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
 
 while true; do
@@ -154,7 +166,7 @@ while true; do
     esac
 done
 
-if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ] && [ $INSTALL_PYTORCH = 0 ] && [ $INSTALL_SCIKIT_LEARN = 0 ] && [ $INSTALL_JETSON_INFERENCE = 0 ] && [ $INSTALL_NVIDIA_DOCKER = 0 ]; then
+if [ $INSTALL_IOTEDGE = 0 ] && [ $CONFIGURE_IOTEDGE = 0 ] && [ $INSTALL_TENSORFLOW = 0 ] && [ $INSTALL_ONNX_RUNTIME = 0 ] && [ $INSTALL_PYTORCH = 0 ] && [ $INSTALL_SCIKIT_LEARN = 0 ] && [ $INSTALL_JETSON_INFERENCE = 0 ] && [ $INSTALL_NVIDIA_DOCKER = 0 ] && [ $INSTALL_TENSORRT_OSS = 0 ]; then
     echo "No packages selected. Skipping install."
     exit
 else
@@ -315,6 +327,29 @@ fi
 
 
 
+if [ $INSTALL_TENSORRT_OSS != 0 ]; then
+
+    echo " Installing TensorRT OSS Fixes."
+    apt remove -y --purge --auto-remove cmake
+    wget -nc -q https://github.com/Kitware/CMake/releases/download/v3.13.5/cmake-3.13.5.tar.gz
+    tar xvf cmake-3.13.5.tar.gz
+    cd cmake-3.13.5/
+    ./configure
+    make -j4
+    make install
+    sudo ln -s /usr/local/bin/cmake /usr/bin/cmake
+    
+    cd ..
+    git clone -b 21.03 https://github.com/nvidia/TensorRT
+    cd TensorRT/
+    git submodule update --init --recursive
+    export TRT_SOURCE=`pwd`
+    cd $TRT_SOURCE
+    mkdir -p build && cd build
+    /usr/local/bin/cmake .. -DGPU_ARCHS=72  -DTRT_LIB_DIR=/usr/lib/aarch64-linux-gnu/ -DCMAKE_C_COMPILER=/usr/bin/gcc -DTRT_BIN_DIR=`pwd`/out
+make nvinfer_plugin -j4
+
+fi
 
 
 echo " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "
