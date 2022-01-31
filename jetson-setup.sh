@@ -347,8 +347,9 @@ if [ $INSTALL_TENSORRT_OSS != 0 ]; then
     cd $TRT_SOURCE
     mkdir -p build && cd build
     /usr/local/bin/cmake .. -DGPU_ARCHS=72  -DTRT_LIB_DIR=/usr/lib/aarch64-linux-gnu/ -DCMAKE_C_COMPILER=/usr/bin/gcc -DTRT_BIN_DIR=`pwd`/out
-make nvinfer_plugin -j4
-
+    make nvinfer_plugin -j4
+    sudo cp libnvinfer.so.7.1.3  /usr/lib/aarch64-linux-gnu/
+    sudo cp libnvinfer_plugin.so  /usr/lib/aarch64-linux-gnu/
 fi
 
 
